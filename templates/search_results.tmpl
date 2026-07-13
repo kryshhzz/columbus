@@ -1,0 +1,58 @@
+{{ define "search_results" }} 
+
+    <div class='search-results-bowl hide'> 
+        <!-- search results appear here -->
+    </div>
+
+    <script>
+
+        var res_bowl = document.querySelector('.search-results-bowl');
+        function setSearchResults(data) {
+            res_bowl.innerHTML = '';
+            data.forEach(entry => {
+                res_bowl.innerHTML += `
+                    <a onclick="openEntry('${JSON.stringify(entry).replace(/"/g, '&quot;')}')">
+                        <img class='icon' src='' ext='${entry.Extension}' />
+                        <span> ${entry.Name} | PATH : ${entry.Path} </span>
+                    </a>
+                `;
+            });
+
+            if (data.length == 0) {
+                res_bowl.innerHTML += `<a>No Results Found</a>`
+            }
+
+            // set icons 
+            res_bowl.querySelectorAll('.icon').forEach(element => {
+                element.src = GetIcon(element.getAttribute('ext'));
+            });
+        }
+
+        function showSearchResults() {
+
+            const rect = document.querySelector('#search-bar').getBoundingClientRect();
+
+            const x = rect.left; // Starting X coordinate
+            const y = rect.top + rect.height + 20;  // Starting Y coordinate
+
+            res_bowl.style.left = x + "px";
+            res_bowl.style.top = y + "px";
+            console.log(x, y)
+
+            res_bowl.classList.remove('hide')
+        }
+
+        function hideSearchResults() {
+            res_bowl.classList.add('hide')
+        }
+
+        document.querySelector('#search-bar').addEventListener('input', () => {
+            var val = document.querySelector('#search-bar').value
+            if (val == "") {
+                hideSearchResults();
+            }
+        });
+
+    </script>
+
+{{ end }} 

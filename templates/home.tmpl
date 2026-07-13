@@ -1,0 +1,120 @@
+{{ template "top" . }}
+
+    <header>
+        <p class="logo">
+            <img src="/assets/icons/logo.png" alt="">
+            columbus
+        </p>
+
+        <div class="nav-cont">
+            {{ range .Entries }}
+                {{ if eq .Type "FOLDER" }}
+                    <a href="/?path={{ .Path }}" class="nav-box">
+                        <img class='icon' src="" alt="" ext="{{ .Extension }}">
+                        {{ .Name }}
+                    </a>
+                {{ end }}
+            {{ else }}
+                <i>No folders</i>
+            {{ end }}
+        </div>
+
+    </header>
+
+    <div class="actions-bowl">
+        <div class="actions-cont">
+            <button class="action-button" onclick="history.go(-1)"><ion-icon name="arrow-back-outline"></ion-icon></button> 
+            <button class="action-button" onclick="history.go(1)"><ion-icon name="arrow-forward-outline"></ion-icon></button> 
+            <button class="action-button" onclick="back()"><ion-icon name="arrow-up-outline"></ion-icon></button> 
+            <button class="action-button" onclick="window.location.reload()"><ion-icon name="refresh-outline"></ion-icon></button>
+        </div>
+        <div class="path-bowl">
+            <ion-icon name="folder-open-outline"></ion-icon>
+            <p>path : {{ .Path }} </p>
+        </div>
+        <div class="search-bowl">
+            <input type="text" name="query" id="search-bar" placeholder="search" autocorrect="off" spellcheck="false" autocomplete="off">
+        </div>
+    </div>
+
+    <div class="content">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Size</th>
+                <th>Last Modified</th>
+            </tr>
+            
+            {{ range .Entries }}
+                <tr onclick="openEntry({{ . }})">
+                    <td>
+                        <img class='icon' src="" alt="" ext="{{ .Extension }}">
+                        {{ .Name }}
+                    </td>
+                    <td>{{ .Type }}</td>
+                    <td>{{ .Size }}</td>
+                    <td>{{ .Date }}</td>
+                </tr>
+            {{ else }}
+                <tr>
+                    <td><i>no files found </i> </td>
+                </tr>
+            {{ end }}
+
+        </table>
+    </div>
+
+    <script>
+
+        function back() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const path = urlParams.get('path');
+            
+            new_path = path.split('/');
+            new_path.pop();
+
+            window.location = "/?path=" + new_path.join('%2f');
+        }
+
+        async function openEntry(entry) {
+            if (typeof entry != 'object') {
+                entry = JSON.parse(entry);
+            }
+
+            if (entry.Type == 'FOLDER') {
+                window.location = "/?path=" + entry.Path;
+            }else{
+
+                const url = `/open?file=${encodeURIComponent(entry.Path)}`;
+
+                try {
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        alert(`Opening file failed`);
+                        console.log(response.json())
+                    }
+                    
+                } catch (error) {
+                    console.error("Open fetch failed:", error);
+                }
+
+            }
+        }
+
+        document.querySelector('#search-bar').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                if (this.value.trim() != ""){
+                    search(this.value);
+                }
+            }
+        });
+
+    </script>
+
+    {{ template "search" . }}
+    {{ template "search_results" . }}
+    {{ template "icon" .}}
+
+{{ template "bottom" . }}

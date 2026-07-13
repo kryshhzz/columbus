@@ -1,0 +1,199 @@
+{{ define "search" }}
+    <script>
+        
+        var flags = {
+            'd' : {
+                // the query is for a dir
+                value_required : false,
+            },
+            'f' : {
+                // the query is for a file
+                value_required : false,
+            },
+            'eq' : {
+                // want results exactly matchign query 
+                value_required : false,
+            },
+
+            // value required flags
+            'l' : {
+                // the limit for the number of results
+                value_required : true,
+            },
+            'dir' : {
+                // the directory path to check for, default is /
+                value_required : true,
+            },
+            'e' : {
+                // extension of the query ( .go .py )
+                value_required : true,
+            }
+        }
+       
+        function getNewToken() {
+            return {
+                type : null,
+                key : '',
+                value : '',
+            }
+        }
+
+        function stringize(txt) {
+            let strings = [];
+            let cur_string = "";
+            let quote_started = false;
+
+            for ( let i = 0; i < txt.length; i++ ) {
+                let ch = txt[i];
+
+                cur_string += ch;
+
+                if ( ch == ' ' ) {
+                    // space
+                    if (quote_started == false) {
+                        // removing the extra space char added
+                        cur_string = cur_string.slice(0, -1);
+                        
+                        // end the token 
+                        if (cur_string != '') {
+                            strings.push(cur_string);
+                            cur_string = '';
+                        }
+                    }
+                }else if ( ch == '"' ) {
+                    // quote; if quote started; end token 
+                    // if not started; start the quote 
+                    
+                    if (quote_started) {
+                        strings.push(cur_string);
+                        cur_string = '';
+                        quote_started = false;
+                    }else{
+                        quote_started = true;
+                    }
+                }
+            }
+
+            // flush the buffer 
+            if ( cur_string != '') {
+                strings.push(cur_string);
+            }   
+
+            return strings; 
+        }
+
+        function tokenize(strings) {
+            
+            // convert the strings to tokens 
+            let tokens = [];
+    
+            strings.forEach((str) => {
+                str = str.trim();
+                
+                // make them into tokens
+                let token = getNewToken();
+    
+                // if str doesnt start with - it is a query
+                if (str[0] == '-') {
+                    // flag
+                    token['type'] = 'flag';
+    
+                    // split it into flag_key, flag_val
+                    // find the first = and split
+                    
+                    str = str.slice(1);
+    
+                    let sep_ind = str.indexOf('=');
+                    let key = str.trim();
+                    let value = '';
+    
+                    if (sep_ind != -1) {
+                        key = str.substring(0, sep_ind);
+                        value = str.substring(sep_ind + 1);
+    
+                        if (value.at(0) == '"' && value.at(-1) == '"') {
+                            value = value.substring(1, value.length-1);
+                        }
+                    }
+    
+                    if (key in flags) {
+                        if ( flags[key]['value_required'] == true && value != '' ){
+                            token['key'] = key;
+                            token['value'] = value;
+                        }else if (flags[key]['value_required'] == false) {
+                            token['key'] = key;
+                        }
+                    }else{
+                        console.log("invalid flag", key)
+                    }
+    
+                } else {
+                    // query 
+                    token['type'] = 'query'
+                    token['value'] = str;
+
+                    if (str.at(0) == '"' && str.at(-1) == '"') {
+                        token['value'] = str.substring(1, str.length-1);
+                    }
+                }
+    
+                tokens.push(token);
+            })
+
+            return tokens;
+        }
+
+        function parseSearch(txt) {
+            
+            // step 1 :  parse it into strings 
+            let strings = stringize(txt);
+        
+            // step1.5 
+            let tokens = tokenize(strings);
+
+            console.log(tokens);
+            
+            let payload = {
+                'query' : '',
+                'flags' : [],
+            }
+
+            for (const token of tokens) {
+                if (token.type == 'query') {
+                    payload['query'] = token.value; 
+                } else if (token.type == 'flag') {
+                    payload['flags'].push(token);
+                }
+            }
+
+            return payload;
+        }
+
+        async function search(txt) { 
+
+            var payload = parseSearch(txt);
+
+            console.log(payload);
+
+            const url = `/search`;
+            try {
+                const response = await fetch(url, {
+                    method : "POST",
+                    body : JSON.stringify(payload),
+                });
+                
+                if (!response.ok) {
+                    alert(`HTTP error! Status: ${response.status}`);
+                }else {
+                    const data = await response.json();
+                    setSearchResults(data.Entries);
+                    showSearchResults();
+                }
+            } catch (error) {
+                console.error("Search fetch failed:", error);
+            }
+        }
+    </script>
+    
+
+{{ end }}

@@ -1,0 +1,44 @@
+{{ define "icon" }} 
+
+    <script>
+        var map = {
+            "folder" : "https://cdn-icons-png.flaticon.com/512/5082/5082720.png",
+            "default" : "   https://cdn-icons-png.flaticon.com/512/342/342348.png ",
+
+            "img" : "https://cdn-icons-png.flaticon.com/128/10054/10054280.png",
+            "pdf" : "https://cdn-icons-png.flaticon.com/128/16168/16168696.png",
+
+            "html" : "https://www.w3.org/html/logo/downloads/HTML5_Badge.svg",
+            "css" : "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Official_CSS_Logo.svg/250px-Official_CSS_Logo.svg.png",
+            "js" : "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/JavaScript-logo.png/250px-JavaScript-logo.png",
+
+            "py" : "https://s3.dualstack.us-east-2.amazonaws.com/pythondotorg-assets/media/files/python-logo-only.svg",
+            "go" : "https://camo.githubusercontent.com/fe415554f43d905aabeedf822b4e33992d96426db4a288e36a3d380a0688bbcc/68747470733a2f2f7261772e6769746875622e636f6d2f676f6c616e672d73616d706c65732f676f706865722d766563746f722f6d61737465722f676f706865722d66726f6e742e706e67",
+            "c" : "https://upload.wikimedia.org/wikipedia/commons/1/18/C_Programming_Language.svg",
+            "cpp" : "https://upload.wikimedia.org/wikipedia/commons/1/18/ISO_C%2B%2B_Logo.svg",
+            "xml" : "https://upload.wikimedia.org/wikipedia/commons/2/2d/Extensible_Markup_Language_%28XML%29_logo.svg",
+
+        }
+
+        function GetIcon(ext) {
+            if (ext == "FOLDER") {
+                return map["folder"];
+            }else  {
+                if (["jpg", "jpeg", "png", "gif"].includes(ext)) {
+                    return map["img"];
+                }
+                if(ext in map) {
+                    return map[ext];
+                }else {
+                    return map["default"]
+                }
+            }
+        }
+
+        document.querySelectorAll('.icon').forEach(element => {
+            element.src = GetIcon(element.getAttribute('ext'));
+        });
+
+    </script>
+
+{{ end }}
