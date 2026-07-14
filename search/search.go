@@ -1,12 +1,13 @@
 package search
 
 import (
-	"os"
-	"bytes"
-	"bufio"
-	"path/filepath"
-	"fmt"
-	"strings"
+	// "os"
+	// "bytes"
+	// "bufio"
+	// "strings"
+	// "fmt"
+
+	"github.com/kryshhzz/columbus/db"
 )
 
 type SearchParams struct {
@@ -26,119 +27,88 @@ func NewSearchParams() *SearchParams {
 	}
 }
 
-func init() {
-	// make it a tree, 
-	// but what is the num of dirs and files are so large that it cant fit in the memory
+func Search(params *SearchParams, ans* []any) (error) {
 
-	file, err := os.OpenFile("columbus_cache.txt",os.O_CREATE|os.O_WRONLY, 0664)
-	if err != nil {
-		panic(err)
+	args := []any{}
+
+	sqlQuery := `SELECT * FROM entries WHERE path LIKE ? `
+	args = append(args, params.Dir + "%")
+
+	// adding name, exactmatch
+	if params.ExactMatch {
+		sqlQuery += `
+		AND name = ?
+		`
+		args = append(args, params.Query)
+	}else{
+		sqlQuery += `
+		AND name LIKE ?
+		`
+		args = append(args, "%" + params.Query + "%")
 	}
-	defer file.Close()
+	
 
-	w := bufio.NewWriter(file)
-	err = Walk("/", w)
-	if err != nil {
-		panic(err)
+	// dir only file only
+	if params.Query_dir_only {
+		sqlQuery += `
+			AND is_dir = true
+		`
+	}else if params.Query_file_only {
+		sqlQuery += `
+			AND is_dir = false
+		`
 	}
 
-	err = w.Flush()
-	if err != nil {
-		panic(err)
+	// extension
+	if params.Ext != "" {
+		sqlQuery += `
+			AND ext = ?
+		`
+		args = append(args, params.Ext)
 	}
-}
 
-func Walk(dir string, w *bufio.Writer) error {
-	entries, err := os.ReadDir(dir)
+	sqlQuery += `
+		LIMIT ?	
+	`
+	args = append(args, params.Limit)
+
+	//fmt.Println(sqlQuery)
+
+	rows, err := db.DB.Query(sqlQuery, args...)
 	if err != nil {
 		return err
 	}
 
-	for _, entry := range entries {
-		str := fmt.Sprintf("%s | %v | %s \n", entry.Name(), entry.IsDir(), filepath.Join(dir, entry.Name()))
-		_, err = w.Write([]byte(str))
+	for rows.Next() {
+		
+		var id uint 
+		var name string
+		var path string 
+		var is_dir bool 
+		var ext string
+		
+		err := rows.Scan(&id, &name, &path, &is_dir, &ext )
 		if err != nil {
-			return err
+			panic(err)
 		}
+		
+		tans := map[string]string{
+					"Name" : name,
+					"Type" : "FILE",
+					"Path" : path,
+					"Extension" : ext,
+				}
 
-		if entry.IsDir() == true {
-			Walk(filepath.Join(dir,entry.Name()), w)
+		if is_dir {
+			tans["Type"] = "FOLDER"
+			tans["Ext"] = "FOLDER"
 		}
+		
+		// fmt.Println(tans)
+		*ans = append(*ans, tans)
 	}
+
 	return nil
 }
 
-func Search(params *SearchParams, ans* []any) (error) {
-
-	dir := params.Dir
-	limit := params.Limit
-	query := params.Query
 	
-	file, err := os.Open("columbus_cache.txt")
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	added := int64(0)
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-
-		splitted := bytes.Split(scanner.Bytes(), []byte(" | "))
-		for i,_ := range splitted {
-			splitted[i] = bytes.TrimSpace(splitted[i])
-		}
-		name := splitted[0]
-		isDir := splitted[1]
-		path := splitted[2]
-
-		var tans map[string]interface{}
-
-		if bytes.HasPrefix(path, []byte(dir)) && bytes.Contains(name, []byte(query)) {
-
-			if params.Ext != "" && !bytes.HasSuffix(name, []byte(params.Ext)) {
-				continue
-			} 
-
-			if params.ExactMatch == true {
-				if !bytes.Equal(name, []byte(query)) {
-					continue
-				}
-			}
-			
-			ssed := strings.Split(string(name), ".")
-			tans = map[string]interface{}{
-						"Name" : string(name) ,
-						"Type" : "FILE",
-						"Path" : string(path),
-						"Extension" : ssed[len(ssed)-1],
-					}
-
-			if bytes.Equal(isDir, []byte("true")){
-				tans["Type"] = "FOLDER"
-				tans["Extension"] = "FOLDER"
-			}
-
-			shouldAppend := true
-			if tans["Type"] == "FOLDER" && params.Query_file_only == true {
-				shouldAppend = false
-			}else if tans["Type"] == "FILE" && params.Query_dir_only == true {
-				shouldAppend = false
-			}
-			if shouldAppend {
-				*ans = append(*ans, tans)
-			}
-
-			added += 1
-			if added >= limit {
-				break
-			}
-		}
-	}
-	fmt.Println(scanner.Err())
-	return scanner.Err()
-}
-
-
-		

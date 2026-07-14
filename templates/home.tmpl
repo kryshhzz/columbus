@@ -68,10 +68,8 @@
     <script>
 
         function back() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const path = urlParams.get('path');
             
-            new_path = path.split('/');
+            new_path = "{{ .Path }}".split('/');
             new_path.pop();
 
             window.location = "/?path=" + new_path.join('%2f');

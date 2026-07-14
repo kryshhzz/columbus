@@ -21,9 +21,13 @@
         }
 
         function GetIcon(ext) {
+
             if (ext == "FOLDER") {
                 return map["folder"];
-            }else  {
+            }else  { 
+                if (ext[0] == ".") {
+                    ext = ext.slice(1);
+                }
                 if (["jpg", "jpeg", "png", "gif"].includes(ext)) {
                     return map["img"];
                 }

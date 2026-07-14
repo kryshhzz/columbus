@@ -12,6 +12,7 @@ import (
 
 	"github.com/kryshhzz/columbus/search"
 	"github.com/kryshhzz/columbus/open"
+	"github.com/kryshhzz/columbus/db"
 )
 
 type searchData struct {
@@ -30,6 +31,10 @@ func formatSize(size int64) string {
 }
 
 func main() {	
+	// cache the fs first 
+	log.Print("caching the file system ...  ")
+ 	db.CacheFS()
+	log.Println("Done Caching")
 
 	r := gin.Default()
 
@@ -175,5 +180,5 @@ func main() {
 		)
 	})
 
-	r.Run(":9062")
+	r.Run(":9061")
 }
