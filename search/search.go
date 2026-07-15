@@ -81,13 +81,13 @@ func Search(params *SearchParams, ans* []any) (error) {
 
 	for rows.Next() {
 		
-		var id uint 
+		var id int64 
 		var name string
 		var path string 
 		var is_dir bool 
 		var ext string
 		
-		err := rows.Scan(&id, &name, &path, &is_dir, &ext )
+		err := rows.Scan(&id, &name, &path, &is_dir, &ext, &id)
 		if err != nil {
 			panic(err)
 		}
