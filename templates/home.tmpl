@@ -2,7 +2,7 @@
 
     <header>
         <p class="logo">
-            <img src="/assets/icons/logo.png" alt="">
+            <img src="/static/icons/logo.png" alt="">
             columbus
         </p>
 
@@ -68,14 +68,19 @@
     <script>
 
         function back() {
-            
-            new_path = "{{ .Path }}".split('/');
-            new_path.pop();
-
-            window.location = "/?path=" + new_path.join('%2f');
+            if ("{{ .OS }}" == "windows" ) {
+                new_path = "{{ .Path }}".split('\\');
+                new_path.pop(); 
+                window.location = "/?path=" + new_path.join('%5c');
+            } else {
+                new_path = "{{ .Path }}".split('/');
+                new_path.pop();
+                window.location = "/?path=" + new_path.join('%2f');
+            }
         }
 
         async function openEntry(entry) {
+            console.log(entry)
             if (typeof entry != 'object') {
                 entry = JSON.parse(entry);
             }

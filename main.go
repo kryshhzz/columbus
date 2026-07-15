@@ -5,14 +5,19 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
+	"runtime"
 	"strconv"
+	"strings"
+
+	"embed"
+	"html/template"
+	"io/fs"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/kryshhzz/columbus/search"
-	"github.com/kryshhzz/columbus/open"
 	"github.com/kryshhzz/columbus/db"
+	"github.com/kryshhzz/columbus/open"
+	"github.com/kryshhzz/columbus/search"
 )
 
 type searchData struct {
@@ -30,6 +35,12 @@ func formatSize(size int64) string {
 	return fmt.Sprintf("%d %s", size, units[unitIndex])
 }
 
+//go:embed templates/*.tmpl
+var templateFS embed.FS
+
+//go:embed assets/*
+var staticFS embed.FS
+
 func main() {	
 	// cache the fs first 
 	log.Print("caching the file system ...  ")
@@ -38,8 +49,17 @@ func main() {
 
 	r := gin.Default()
 
-	r.LoadHTMLGlob("templates/*.tmpl")
-	r.Static("/assets", "./assets") 
+	t := template.Must(template.ParseFS(templateFS, "templates/*.tmpl"))
+	r.SetHTMLTemplate(t)
+
+	// 1. Strip the prefix directory ("assets") out of the path tree
+	assetsFS, err := fs.Sub(staticFS, "assets")
+	if err != nil {
+		panic(err)
+	}
+
+	// 2. Serve the static assets under the "/static" HTTP route
+	r.StaticFS("/static", http.FS(assetsFS))
 
 	r.POST("/search", func(c *gin.Context) {
 
@@ -134,11 +154,12 @@ func main() {
 		entries, err := os.ReadDir(path)
 		if err != nil {
 			c.HTML(
-				200, 
+				http.StatusBadRequest, 
 				"home.tmpl",
 				gin.H{
 					"Entries" : cont,
-					"Path" : path,
+					"Path" : path, 
+					"OS" : runtime.GOOS,
 				},
 			)
 			return
@@ -176,6 +197,7 @@ func main() {
 			gin.H{
 				"Entries" : cont,
 				"Path" : path,
+				"OS" : runtime.GOOS,
 			},
 		)
 	})

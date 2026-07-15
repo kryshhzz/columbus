@@ -7,12 +7,15 @@ import (
 	"sync"
 	"time"
 
+	"runtime"
 	"database/sql"
 
 	_ "modernc.org/sqlite"
 )
 
 var DB *sql.DB
+
+var rootDir string = "/"
 
 var createTableQuery string = `
 		CREATE TABLE IF NOT EXISTS entries (
@@ -34,6 +37,10 @@ var curSyncID int64
 
 
 func init() {
+
+	if runtime.GOOS == "windows" {
+		rootDir = "C:\\"
+	}
 
 	curSyncID = time.Time{}.Unix()
 
@@ -63,7 +70,7 @@ func init() {
 		panic(fmt.Errorf("Could not create or connect to database: %v",err))
 	}
 
-	fmt.Println("Database file verified/created successfully!")
+	fmt.Println("Database file verified/created successfully! @ ", dsnURI)
 	res, err := DB.Exec(createTableQuery)
 	if err != nil {
 		panic(err)
@@ -132,7 +139,7 @@ func writeToDB(buffer chan DirEntry) {
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("\r\033[K[DB] Committed items: %d...", count)
+			fmt.Printf("\r\033[K[DB] Committed items: %d. latest: %v", count, de.Dir)
 
 			// creating new tx
 			tx, err = DB.Begin()
@@ -173,7 +180,7 @@ func CacheFS() {
 	wg := sync.WaitGroup{}
 
 	wg.Add(1)
-	go Walk("/", buffer, errch, &wg)
+	go Walk(rootDir, buffer, errch, &wg)
 
 	go func() {
 		wg.Wait()

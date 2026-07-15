@@ -5,7 +5,8 @@ import (
 	// "bytes"
 	// "bufio"
 	// "strings"
-	// "fmt"
+	"fmt"
+	"runtime"
 
 	"github.com/kryshhzz/columbus/db"
 )
@@ -21,13 +22,21 @@ type SearchParams struct {
 }
 
 func NewSearchParams() *SearchParams {
+	rootDir := "/"
+
+	if runtime.GOOS == "windows" {
+		rootDir = "C:\\"
+	}
+
 	return &SearchParams {
 		Limit : 10,
-		Dir : "/",
+		Dir : rootDir,
 	}
 }
 
 func Search(params *SearchParams, ans* []any) (error) {
+
+	fmt.Println(params)
 
 	args := []any{}
 

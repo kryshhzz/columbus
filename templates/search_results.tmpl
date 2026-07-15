@@ -8,14 +8,19 @@
 
         var res_bowl = document.querySelector('.search-results-bowl');
         function setSearchResults(data) {
+            console.log(data)
             res_bowl.innerHTML = '';
             data.forEach(entry => {
-                res_bowl.innerHTML += `
-                    <a onclick="openEntry('${JSON.stringify(entry).replace(/"/g, '&quot;')}')">
-                        <img class='icon' src='' ext='${entry.Extension}' />
-                        <span> ${entry.Name} | PATH : ${entry.Path} </span>
-                    </a>
+                const anchor = document.createElement('a');
+                anchor.entryData = entry; 
+                anchor.addEventListener('click', function() {
+                    openEntry(this.entryData); // Passes the clean, native object
+                });
+                anchor.innerHTML = `
+                    <img class='icon' src='' ext='${entry.Extension}' />
+                    <span> ${entry.Name} | PATH : ${entry.Path} </span>
                 `;
+                res_bowl.appendChild(anchor);
             });
 
             if (data.length == 0) {
